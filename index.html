@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Briefing">
+<title>Daily Briefing</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --bg: #f5f5f7;
+  --surface: #ffffff;
+  --surface2: #f5f5f7;
+  --border: rgba(0,0,0,0.08);
+  --border-md: rgba(0,0,0,0.12);
+  --text: #1d1d1f;
+  --text-2: #6e6e73;
+  --text-3: #a1a1a6;
+  --accent: #0071e3;
+  --r-critical: #ff3b30;
+  --r-warning: #ff9500;
+  --r-info: #0071e3;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000;
+    --surface: #1c1c1e;
+    --surface2: #2c2c2e;
+    --border: rgba(255,255,255,0.08);
+    --border-md: rgba(255,255,255,0.14);
+    --text: #f5f5f7;
+    --text-2: #98989d;
+    --text-3: #636366;
+    --accent: #2997ff;
+    --r-critical: #ff453a;
+    --r-warning: #ff9f0a;
+    --r-info: #2997ff;
+  }
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  min-height: 100dvh;
+  padding-top: calc(var(--safe-top));
+  padding-bottom: calc(var(--safe-bottom) + 20px);
+  -webkit-font-smoothing: antialiased;
+}
+
+.header {
+  padding: 16px 20px 12px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0;
+  background: rgba(245,245,247,0.85);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  z-index: 10;
+  border-bottom: 0.5px solid var(--border);
+}
+@media (prefers-color-scheme: dark) { .header { background: rgba(0,0,0,0.85); } }
+.header-sub { font-size: 12px; color: var(--text-2); margin-top: 1px; }
+.header-actions { display: flex; gap: 8px; align-items: center; }
+
+.icon-btn {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--surface); border: 0.5px solid var(--border-md);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--text-2); transition: opacity 0.15s;
+}
+.icon-btn:active { opacity: 0.5; }
+.icon-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.icon-btn.spinning { animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.summary-wrap { padding: 12px 16px 0; display: none; }
+.summary-wrap.visible { display: block; }
+.summary-card { background: var(--surface); border-radius: 14px; border: 0.5px solid var(--border); padding: 14px 16px; }
+.summary-eyebrow { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: var(--accent); margin-bottom: 5px; }
+.summary-text { font-size: 14px; line-height: 1.55; color: var(--text); }
+
+.pills-wrap { padding: 12px 16px 4px; display: flex; gap: 7px; overflow-x: auto; scrollbar-width: none; }
+.pills-wrap::-webkit-scrollbar { display: none; }
+.pill { padding: 5px 13px; border-radius: 20px; font-size: 13px; font-weight: 500; border: 0.5px solid var(--border-md); background: var(--surface); color: var(--text-2); white-space: nowrap; cursor: pointer; transition: all 0.15s; }
+.pill.active { background: var(--text); color: var(--bg); border-color: transparent; }
+
+.list-wrap { padding: 10px 16px; }
+.list-label { font-size: 12px; color: var(--text-3); margin: 12px 0 8px 2px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.alert { background: var(--surface); border-radius: 14px; border: 0.5px solid var(--border); margin-bottom: 8px; overflow: hidden; cursor: pointer; transition: opacity 0.12s; display: flex; }
+.alert:active { opacity: 0.6; }
+.alert-accent { width: 3px; flex-shrink: 0; }
+.alert-body { padding: 13px 14px; flex: 1; min-width: 0; }
+.alert-top { display: flex; align-items: flex-start; gap: 8px; }
+.alert-main { flex: 1; min-width: 0; }
+.alert-meta-row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+.alert-source { font-size: 11px; font-weight: 500; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.3px; }
+.alert-badge { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.3px; }
+.badge-critical { background: rgba(255,59,48,0.1); color: var(--r-critical); }
+.badge-warning { background: rgba(255,149,0,0.1); color: var(--r-warning); }
+.badge-info { background: rgba(0,113,227,0.1); color: var(--r-info); }
+@media (prefers-color-scheme: dark) {
+  .badge-critical { background: rgba(255,69,58,0.15); }
+  .badge-warning { background: rgba(255,159,10,0.15); }
+  .badge-info { background: rgba(41,151,255,0.15); }
+}
+.alert-title { font-size: 15px; font-weight: 500; line-height: 1.3; color: var(--text); }
+.alert-desc { font-size: 13px; color: var(--text-2); margin-top: 4px; line-height: 1.45; }
+.alert-footer { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
+.alert-time { font-size: 12px; color: var(--text-3); }
+.alert-tag { font-size: 11px; padding: 2px 8px; border-radius: 5px; background: var(--surface2); color: var(--text-2); }
+.score-row { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.score-bar-bg { flex: 1; height: 3px; border-radius: 2px; background: var(--surface2); overflow: hidden; }
+.score-bar-fill { height: 100%; border-radius: 2px; }
+.score-num { font-size: 11px; font-weight: 600; min-width: 22px; text-align: right; }
+
+.dismiss-btn { width: 22px; height: 22px; border-radius: 50%; background: var(--surface2); border: none; color: var(--text-3); font-size: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; margin-top: 2px; }
+.dismiss-btn:active { opacity: 0.5; }
+
+.center-wrap { padding: 64px 24px; text-align: center; }
+.center-icon { font-size: 32px; margin-bottom: 14px; }
+.center-icon.pulse { animation: px 1.6s ease-in-out infinite; }
+@keyframes px { 0%,100%{opacity:1} 50%{opacity:.3} }
+.center-title { font-size: 17px; font-weight: 500; margin-bottom: 6px; }
+.center-sub { font-size: 14px; color: var(--text-2); line-height: 1.5; }
+
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; display: none; align-items: flex-end; }
+.overlay.open { display: flex; }
+.sheet { background: var(--surface); border-radius: 20px 20px 0 0; padding: 10px 20px calc(20px + var(--safe-bottom)); width: 100%; max-height: 92dvh; overflow-y: auto; }
+.sheet-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--border-md); margin: 8px auto 20px; }
+.sheet-title { font-size: 20px; font-weight: 600; margin-bottom: 20px; }
+.field-label { font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-2); margin-bottom: 8px; }
+.field-input { width: 100%; padding: 11px 14px; background: var(--surface2); border: 0.5px solid var(--border); border-radius: 10px; color: var(--text); font-size: 15px; font-family: -apple-system, sans-serif; margin-bottom: 18px; -webkit-appearance: none; }
+.field-input:focus { outline: none; border-color: var(--accent); }
+textarea.field-input { min-height: 78px; resize: none; line-height: 1.5; }
+.tools-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.tool-chip { padding: 7px 13px; border-radius: 10px; border: 0.5px solid var(--border-md); background: var(--surface2); color: var(--text-2); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+.tool-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.save-btn { width: 100%; padding: 14px; background: var(--accent); border: none; border-radius: 12px; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 6px; -webkit-appearance: none; }
+.save-btn:active { opacity: 0.8; }
+.last-refresh { text-align: center; font-size: 12px; color: var(--text-3); padding: 8px 0 4px; }
+.api-note { font-size: 12px; color: var(--text-3); margin-top: -12px; margin-bottom: 18px; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div style="font-size:17px;font-weight:600;letter-spacing:-0.2px">Daily Briefing</div>
+    <div class="header-sub" id="dateStr"></div>
+  </div>
+  <div class="header-actions">
+    <div class="icon-btn" onclick="openConfig()">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </div>
+    <div class="icon-btn" id="refreshBtn" onclick="loadBriefing()">
+      <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+    </div>
+  </div>
+</div>
+
+<div class="summary-wrap" id="summaryWrap">
+  <div class="summary-card">
+    <div class="summary-eyebrow">Today's overview</div>
+    <div class="summary-text" id="summaryText"></div>
+  </div>
+</div>
+
+<div class="pills-wrap" id="pillsWrap">
+  <div class="pill active" data-filter="all" onclick="setFilter('all',this)">All</div>
+</div>
+
+<div class="list-wrap" id="mainContent">
+  <div class="center-wrap">
+    <div class="center-icon">✦</div>
+    <div class="center-title">Your briefing is waiting</div>
+    <div class="center-sub">Add your API key in settings,<br>then tap refresh to load.</div>
+  </div>
+</div>
+
+<div class="last-refresh" id="lastRefresh"></div>
+
+<div class="overlay" id="overlay" onclick="closeIfOut(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Settings</div>
+
+    <div class="field-label">Anthropic API key</div>
+    <input class="field-input" id="cfgKey" type="password" placeholder="sk-ant-...">
+    <div class="api-note">Get your key at console.anthropic.com — stored locally on your device only.</div>
+
+    <div class="field-label">Your name</div>
+    <input class="field-input" id="cfgName" type="text" placeholder="Peter">
+
+    <div class="field-label">Your role &amp; context</div>
+    <textarea class="field-input" id="cfgRole" placeholder="e.g. VP of Accounts at a Splunk and AWS consulting firm. I manage business development, recruiting, and client accounts."></textarea>
+
+    <div class="field-label">What matters most</div>
+    <textarea class="field-input" id="cfgPriorities" placeholder="e.g. Overdue tasks, unanswered customer emails, deals closing this week, today's meetings, open recruiting pipeline."></textarea>
+
+    <div class="field-label">Connected tools</div>
+    <div class="tools-grid" id="toolsGrid"></div>
+
+    <button class="save-btn" onclick="saveConfig()">Save and refresh</button>
+  </div>
+</div>
+
+<script>
+const TOOLS = [
+  { id:"m365",      label:"Microsoft 365", mcp:"https://microsoft365.mcp.claude.com/mcp" },
+  { id:"asana",     label:"Asana",         mcp:"https://mcp.asana.com/sse" },
+  { id:"atlassian", label:"Atlassian",     mcp:"https://mcp.atlassian.com/v1/mcp" },
+  { id:"notion",    label:"Notion",        mcp:"https://mcp.notion.com/mcp" },
+  { id:"linear",    label:"Linear",        mcp:"https://mcp.linear.app/mcp" },
+  { id:"monday",    label:"Monday.com",    mcp:"https://mcp.monday.com/mcp" },
+  { id:"hubspot",   label:"HubSpot",       mcp:"https://mcp.hubspot.com/anthropic" },
+  { id:"intercom",  label:"Intercom",      mcp:"https://mcp.intercom.com/mcp" },
+];
+
+let cfg = JSON.parse(localStorage.getItem("bc2") || "{}");
+let allAlerts = [];
+let activeFilter = "all";
+
+document.getElementById("dateStr").textContent = new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
+buildGrid(); loadForm();
+
+function buildGrid() {
+  const g = document.getElementById("toolsGrid");
+  g.innerHTML = "";
+  TOOLS.forEach(t => {
+    const el = document.createElement("div");
+    el.className = "tool-chip" + ((cfg.tools||[]).includes(t.id) ? " active" : "");
+    el.textContent = t.label; el.dataset.id = t.id;
+    el.onclick = () => el.classList.toggle("active");
+    g.appendChild(el);
+  });
+}
+function loadForm() {
+  document.getElementById("cfgKey").value = cfg.key||"";
+  document.getElementById("cfgName").value = cfg.name||"";
+  document.getElementById("cfgRole").value = cfg.role||"";
+  document.getElementById("cfgPriorities").value = cfg.priorities||"";
+}
+function openConfig() { buildGrid(); loadForm(); document.getElementById("overlay").classList.add("open"); }
+function closeIfOut(e) { if(e.target===document.getElementById("overlay")) document.getElementById("overlay").classList.remove("open"); }
+function saveConfig() {
+  cfg = {
+    key: document.getElementById("cfgKey").value.trim(),
+    name: document.getElementById("cfgName").value.trim(),
+    role: document.getElementById("cfgRole").value.trim(),
+    priorities: document.getElementById("cfgPriorities").value.trim(),
+    tools: [...document.querySelectorAll(".tool-chip.active")].map(c=>c.dataset.id)
+  };
+  localStorage.setItem("bc2", JSON.stringify(cfg));
+  document.getElementById("overlay").classList.remove("open");
+  loadBriefing();
+}
+
+async function loadBriefing() {
+  if(!cfg.key) { openConfig(); return; }
+  const btn = document.getElementById("refreshBtn");
+  btn.classList.add("spinning");
+  setContent(`<div class="center-wrap"><div class="center-icon pulse">✦</div><div class="center-title">Pulling from your tools</div><div class="center-sub">Triaging with AI…</div></div>`);
+  document.getElementById("summaryWrap").classList.remove("visible");
+
+  const selTools = (cfg.tools||[]).map(id=>TOOLS.find(t=>t.id===id)).filter(Boolean);
+  const mcpServers = selTools.map(t=>({type:"url",url:t.mcp,name:t.id}));
+  const toolNames = selTools.map(t=>t.label).join(", ")||"no specific tools";
+  const today = new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+
+  const prompt = `Today is ${today}. ${cfg.name?"My name is "+cfg.name+".":""} ${cfg.role?"Context: "+cfg.role:""} ${cfg.priorities?"What matters most: "+cfg.priorities:""}
+
+Connected tools: ${toolNames}. Query ALL of them. Return ONLY a JSON object — no markdown, no backticks:
+
+{
+  "summary": "2-3 sentence plain English overview of the most important things today",
+  "alerts": [
+    {
+      "id": "unique_id",
+      "level": "critical|warning|info",
+      "priority_score": 85,
+      "source": "Tool name",
+      "title": "Short title",
+      "body": "1-2 sentence detail",
+      "time": "relative time or deadline",
+      "tag": "optional category"
+    }
+  ]
+}
+
+Score each alert 1-100: Start 50. +30 overdue or blocking someone. +20 due today. +15 involves customer/deal/revenue. +10 someone waiting on response. +10 meeting within 2h. -10 informational only. -20 can wait until tomorrow.
+level: 75-100 = critical, 45-74 = warning, 0-44 = info.
+Sort by priority_score descending. Max 20 alerts.`;
+
+  try {
+    const body = {model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:prompt}]};
+    if(mcpServers.length) body.mcp_servers = mcpServers;
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "x-api-key": cfg.key,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if(data.error) throw new Error(data.error.message);
+    let raw = (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("").replace(/```json|```/g,"").trim();
+    const parsed = JSON.parse(raw);
+    allAlerts = parsed.alerts||[];
+    renderBriefing(parsed.summary, allAlerts);
+  } catch(err) {
+    setContent(`<div class="center-wrap"><div class="center-icon">⚠</div><div class="center-title">Couldn't load</div><div class="center-sub">${err.message}</div></div>`);
+  }
+  btn.classList.remove("spinning");
+  document.getElementById("lastRefresh").textContent = "Updated " + new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+}
+
+function renderBriefing(summary, alerts) {
+  if(summary) {
+    document.getElementById("summaryText").textContent = summary;
+    document.getElementById("summaryWrap").classList.add("visible");
+  }
+  const sources = [...new Set(alerts.map(a=>a.source))];
+  const bar = document.getElementById("pillsWrap");
+  bar.innerHTML = `<div class="pill active" data-filter="all" onclick="setFilter('all',this)">All</div>`;
+  sources.forEach(s => {
+    const p = document.createElement("div");
+    p.className = "pill"; p.dataset.filter = s; p.textContent = s;
+    p.onclick = () => setFilter(s,p); bar.appendChild(p);
+  });
+  renderAlerts(alerts);
+}
+
+function setFilter(val, el) {
+  activeFilter = val;
+  document.querySelectorAll(".pill").forEach(p=>p.classList.remove("active"));
+  el.classList.add("active");
+  renderAlerts(allAlerts);
+}
+
+function levelColor(lvl) {
+  return lvl==="critical"?"var(--r-critical)":lvl==="warning"?"var(--r-warning)":"var(--r-info)";
+}
+function levelLabel(lvl) {
+  return lvl==="critical"?"Critical":lvl==="warning"?"Attention":"Info";
+}
+
+function renderAlerts(alerts) {
+  const filtered = activeFilter==="all" ? alerts : alerts.filter(a=>a.source===activeFilter);
+  const sorted = [...filtered].sort((a,b)=>(b.priority_score??50)-(a.priority_score??50));
+  if(!sorted.length) {
+    setContent(`<div class="center-wrap"><div class="center-icon">✓</div><div class="center-title">All clear</div><div class="center-sub">Nothing needs attention right now.</div></div>`);
+    return;
+  }
+  let html = `<div class="list-label">${sorted.length} item${sorted.length!==1?"s":""} · ranked by priority</div>`;
+  sorted.forEach(a => {
+    const c = levelColor(a.level);
+    const sc = a.priority_score??50;
+    html += `<div class="alert" id="c-${a.id}">
+      <div class="alert-accent" style="background:${c}"></div>
+      <div class="alert-body">
+        <div class="alert-top">
+          <div class="alert-main">
+            <div class="alert-meta-row">
+              <span class="alert-source">${a.source}</span>
+              <span class="alert-badge badge-${a.level}">${levelLabel(a.level)}</span>
+            </div>
+            <div class="alert-title">${a.title}</div>
+            ${a.body?`<div class="alert-desc">${a.body}</div>`:""}
+            <div class="alert-footer">
+              ${a.time?`<span class="alert-time">${a.time}</span>`:""}
+              ${a.tag?`<span class="alert-tag">${a.tag}</span>`:""}
+            </div>
+            <div class="score-row">
+              <div class="score-bar-bg"><div class="score-bar-fill" style="width:${sc}%;background:${c}"></div></div>
+              <span class="score-num" style="color:${c}">${sc}</span>
+            </div>
+          </div>
+          <button class="dismiss-btn" onclick="dismiss('${a.id}',event)">✕</button>
+        </div>
+      </div>
+    </div>`;
+  });
+  setContent(html);
+}
+
+function dismiss(id, e) {
+  e.stopPropagation();
+  allAlerts = allAlerts.filter(a=>a.id!==id);
+  renderAlerts(allAlerts);
+}
+
+function setContent(h) { document.getElementById("mainContent").innerHTML = h; }
+</script>
+</body>
+</html>
